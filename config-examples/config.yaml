@@ -1,0 +1,12 @@
+send-mqtt: false
+mqtt:
+  mqtt-host: localhost
+  mqtt-port: 1883
+  mqtt-user: user
+  mqtt-password: user
+
+# if send-mqtt is false provide a webhook endpoint
+api:
+  endpoint: http://localhost:3000/send-data/
+  api-key-header-name: x-api-key
+  api-key: sk_test_8f93b2a7c4d14f2a9e8d1c5b7a9e3f12

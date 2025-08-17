@@ -1,0 +1,33 @@
+messages:
+  - title: msg_1
+    device: device_a
+    type: string
+    options:
+      - first_msg
+      - second_msg
+      - third_msg
+    rate: once
+  - title: msg_2
+    device: device_b
+    type: int
+    rate: 2pm
+  - title: msg_3
+    device: device_b
+    type: int
+    rate: 2pm
+    max: 100
+    min: 0
+  - title: msg_4
+    device: device_c
+    type: object
+    body:
+    - title: msg_4_1
+      type: int
+      max: 100
+      min: 0
+    - title: msg_4_2
+      type: decimal
+      max: 200
+      min: 1
+    rate: 10pm
+
