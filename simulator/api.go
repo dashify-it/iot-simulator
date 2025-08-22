@@ -3,10 +3,11 @@ package simulator
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/dashify-it/iot-sim/logger"
 )
 
 var ApiClient *http.Client
@@ -35,7 +36,7 @@ func SendApiRequest(config Config, body interface{}) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(responseBody))
+	logger.Log.Debug("response from webhook: ", string(responseBody))
 	resp.Body.Close()
 	return nil
 }

@@ -1,8 +1,10 @@
 package simulator
 
 import (
+	"encoding/json"
 	"fmt"
 
+	"github.com/dashify-it/iot-sim/logger"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
@@ -16,17 +18,23 @@ func InitMqttClient(cfg Config) {
 	MqttClient = mqtt.NewClient(opts)
 
 	if token := MqttClient.Connect(); token.Wait() && token.Error() != nil {
+		logger.Log.Error(fmt.Sprintf("could not connect to mqtt broker %s", token.Error()))
 		panic(token.Error())
 	}
-	fmt.Println("Connected to MQTT broker")
+	logger.Log.Info(fmt.Sprintf("Connected to MQTT broker %s:%d", cfg.Mqtt.Host, cfg.Mqtt.Port))
 }
 
 func SendMqttMessage(topic string, message interface{}) error {
-	token := MqttClient.Publish(topic, 0, false, message)
+	jsonBytes, err := json.Marshal(message)
+	if err != nil {
+		logger.Log.Error("Error parsing json: ", err.Error())
+		return err
+	}
+	token := MqttClient.Publish(topic, 0, false, fmt.Sprintf("%v", string(jsonBytes)))
 	token.Wait()
 	if token.Error() != nil {
 		return token.Error()
 	}
-	fmt.Println("Message published.")
+	logger.Log.Info(fmt.Sprintf("Message published successfully %s to topic: %s", fmt.Sprintf("%v", string(jsonBytes)), topic))
 	return nil
 }

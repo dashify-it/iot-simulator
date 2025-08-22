@@ -1,9 +1,11 @@
 package simulator
 
 import (
-	"fmt"
 	"math/rand"
 	"sync"
+	"time"
+
+	"github.com/dashify-it/iot-sim/logger"
 )
 
 func Simulate(config Config, specs Specs) {
@@ -18,11 +20,58 @@ func Simulate(config Config, specs Specs) {
 		wg.Add(1)
 		go func(m Message) {
 			defer wg.Done()
-			HandleMessage(config, m)
+			runEvent(config, m)
 		}(msg)
 	}
 
 	wg.Wait()
+}
+func runEvent(config Config, m Message) {
+	switch m.RateType {
+	case ONCE:
+		// Just run once
+		HandleMessage(config, m)
+
+	case PS: // per second
+		interval := time.Second / time.Duration(m.RateNumber)
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			HandleMessage(config, m)
+		}
+
+	case PM: // per minute
+		interval := time.Minute / time.Duration(m.RateNumber)
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			HandleMessage(config, m)
+		}
+
+	case PH: // per hour
+		interval := time.Hour / time.Duration(m.RateNumber)
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			HandleMessage(config, m)
+		}
+
+	case PD: // per day
+		interval := 24 * time.Hour / time.Duration(m.RateNumber)
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			HandleMessage(config, m)
+		}
+
+	default:
+		// fallback: just once if type is unknown
+		HandleMessage(config, m)
+	}
 }
 func HandleMessage(config Config, message Message) {
 	body := buildMessage(message)
@@ -33,15 +82,15 @@ func HandleMessage(config Config, message Message) {
 		err = SendApiRequest(config, body)
 	}
 	if err != nil {
-		fmt.Println(err.Error())
+		logger.Log.Error("sending the msg failed: ", err.Error())
 	}
 }
 
-func buildMessage(message Message) interface{} {
-	R := rand.New(rand.NewSource(55))
+func buildMessage(message Message) map[string]interface{} {
+	R := rand.New(rand.NewSource(time.Now().UnixNano()))
 	body := map[string]interface{}{}
 	if message.Type == string(STRING) {
-		randomIndex := rand.Intn(len(message.Options))
+		randomIndex := R.Intn(len(message.Options))
 		randomValue := message.Options[randomIndex]
 		body[message.Title] = randomValue
 	}
@@ -51,37 +100,18 @@ func buildMessage(message Message) interface{} {
 	}
 	if message.Type == string(DECIMAL) {
 		randomValue := message.Min + rand.Float64()*(message.Max-message.Min)
-		body[message.Title] = randomValue
+		body[message.Title] = float32(randomValue)
 	}
 	if message.Type == string(BOOLEAN) {
 		randomValue := rand.Intn(2) == 1
 		body[message.Title] = randomValue
 	}
 	if message.Type == string(OBJECT) {
+		subMsg := map[string]interface{}{}
 		for i := range message.Body {
-			body[message.Title] = buildMessage(message.Body[i])
+			subMsg[message.Body[i].Title] = buildMessage(message.Body[i])[message.Body[i].Title]
 		}
+		body[message.Title] = subMsg
 	}
 	return body
-}
-
-func HandleMessageOld(sendMqtt bool, message Message) {
-	medium := "mqtt"
-	if !sendMqtt {
-		medium = "api"
-	}
-	rate := "once"
-	if message.RateType == PS {
-		rate = fmt.Sprintf("%d per second", message.RateNumber)
-	}
-	if message.RateType == PM {
-		rate = fmt.Sprintf("%d per minute", message.RateNumber)
-	}
-	if message.RateType == PH {
-		rate = fmt.Sprintf("%d per hour", message.RateNumber)
-	}
-	if message.RateType == PD {
-		rate = fmt.Sprintf("%d per day", message.RateNumber)
-	}
-	fmt.Printf("Handling %s msg from %s via %s for %s\n", message.Type, message.Device, medium, rate)
 }

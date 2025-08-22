@@ -1,14 +1,14 @@
 package simulator
 
 import (
-	"fmt"
+	"github.com/dashify-it/iot-sim/logger"
 )
 
 func ReadConfigs() Config {
 	cfg, err := ParseConfigFile()
 
 	if err != nil {
-		fmt.Println(err.Error())
+		logger.Log.Error("error parsing config file: ", err.Error())
 	}
 	return cfg
 }

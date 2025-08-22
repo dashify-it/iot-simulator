@@ -4,17 +4,19 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/dashify-it/iot-sim/logger"
 )
 
 func ReadSpecs() Specs {
 	specs, err := ParseSpecFile()
 
 	if err != nil {
-		fmt.Println(err.Error())
+		logger.Log.Error("error parsing specs: ", err.Error())
 	}
 	specs.ValidateSpecs()
 	if err != nil {
-		fmt.Println(err.Error())
+		logger.Log.Error("error validating specs: ", err.Error())
 	}
 	return specs
 }
@@ -30,9 +32,7 @@ func (specs *Specs) ValidateSpecs() error {
 }
 
 func (message *Message) validateMsg() error {
-	// fmt.Printf("wrong message:%s max:%f min:%f\n", message.Title, message.Max, message.Min)
 	message.SetDefaults()
-	// fmt.Printf("corrected message:%s max:%f min:%f\n", message.Title, message.Max, message.Min)
 	switch message.Type {
 	case string(STRING):
 		if len(message.Options) == 0 {
@@ -63,9 +63,10 @@ func (message *Message) validateMsg() error {
 }
 
 func ExtractRate(rate string) (int, MessageRate) {
-	res, isPS := parseRateTypeAndReturnNumber(rate, PS)
+	_, isPS := parseRateTypeAndReturnNumber(rate, PS)
 	if isPS {
-		return res, PS
+		// enforce once per second for starter
+		return 1, PS
 	}
 	res, isPM := parseRateTypeAndReturnNumber(rate, PM)
 	if isPM {

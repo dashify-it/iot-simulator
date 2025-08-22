@@ -1,4 +1,4 @@
-send-mqtt: false
+send-mqtt: true
 mqtt:
   mqtt-host: localhost
   mqtt-port: 1883
